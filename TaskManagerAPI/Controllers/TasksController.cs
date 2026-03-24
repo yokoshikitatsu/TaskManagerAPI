@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TaskManagerAPI.Data;
 using TaskManagerAPI.Models;
+using TaskManagerAPI.Models.Requests;
 
 namespace TaskManagerAPI.Controllers
 {
@@ -104,30 +105,97 @@ namespace TaskManagerAPI.Controllers
 
         // POST: api/tasks
         [HttpPost]
-        public async System.Threading.Tasks.Task<ActionResult<Models.Task>> CreateTask(Models.Task task)
+        public async Task<ActionResult<object>> CreateTask([FromBody] CreateTaskRequest request)
         {
-            if (string.IsNullOrWhiteSpace(task.Title))
+            // Валидация выполняется автоматически благодаря [ApiController]
+            // Но можно добавить дополнительную проверку
+            if (!ModelState.IsValid)
             {
-                return BadRequest("Название задачи не может быть пустым.");
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "ValidationError",
+                    Message = "Ошибки валидации входных данных",
+                    StatusCode = 400,
+                    Details = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList()
+                });
             }
+
+            var task = new Models.Task
+            {
+                Title = request.Title,
+                Description = request.Description,
+                Priority = request.Priority,
+                Category = request.Category,
+                IsCompleted = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
             var createdTask = await _repository.CreateTaskAsync(task);
-            return CreatedAtAction(nameof(GetTask), new { id = createdTask.Id }, createdTask);
+
+            return CreatedAtAction(nameof(GetTask), new { id = createdTask.Id },
+                new { data = createdTask, message = "Задача успешно создана" });
         }
 
         // PUT: api/tasks/5
         [HttpPut("{id}")]
-        public async System.Threading.Tasks.Task<ActionResult<Models.Task>> UpdateTask(int id, Models.Task task)
+        public async Task<ActionResult<object>> UpdateTask(int id, [FromBody] UpdateTaskRequest request)
         {
-            if (id != task.Id)
+            if (!ModelState.IsValid)
             {
-                return BadRequest("ID в URL не совпадает с ID в теле запроса.");
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "ValidationError",
+                    Message = "Ошибки валидации входных данных",
+                    StatusCode = 400,
+                    Details = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList()
+                });
             }
+
+            if (id != request.Id)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "IdMismatch",
+                    Message = "ID в URL не совпадает с ID в теле запроса.",
+                    StatusCode = 400
+                });
+            }
+
+            var task = await _repository.GetTaskByIdAsync(id);
+            if (task == null)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Error = "TaskNotFound",
+                    Message = $"Задача с ID {id} не найдена.",
+                    StatusCode = 404
+                });
+            }
+
+            task.Title = request.Title;
+            task.Description = request.Description;
+            task.IsCompleted = request.IsCompleted;
+            task.Priority = request.Priority;
+            task.Category = request.Category;
+
+            if (task.IsCompleted && task.CompletedAt == null)
+            {
+                task.CompletedAt = DateTime.UtcNow;
+            }
+            else if (!task.IsCompleted)
+            {
+                task.CompletedAt = null;
+            }
+
             var updatedTask = await _repository.UpdateTaskAsync(id, task);
-            if (updatedTask == null)
-            {
-                return NotFound($"Задача с ID {id} не найдена.");
-            }
-            return Ok(updatedTask);
+
+            return Ok(new { data = updatedTask, message = "Задача успешно обновлена" });
         }
 
         // DELETE: api/tasks/5

@@ -16,10 +16,72 @@ namespace TaskManagerAPI.Controllers
 
         // GET: api/tasks
         [HttpGet]
-        public async System.Threading.Tasks.Task<ActionResult<List<Models.Task>>> GetAllTasks()
+        public ActionResult<object> GetAllTasks(
+            [FromQuery] string? category = null,
+            [FromQuery] int? priority = null,
+            [FromQuery] bool? isCompleted = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string? sortOrder = "asc",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var tasks = await _repository.GetAllTasksAsync();
-            return Ok(tasks);
+            // Получаем все задачи из репозитория
+            var tasks = _repository.GetAllTasksAsync().Result;
+
+            // Применяем фильтрацию
+            var query = tasks.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                query = query.Where(t => t.Category.Equals(category, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (priority.HasValue)
+            {
+                query = query.Where(t => t.Priority == priority.Value);
+            }
+
+            if (isCompleted.HasValue)
+            {
+                query = query.Where(t => t.IsCompleted == isCompleted.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+              
+                string order = string.IsNullOrWhiteSpace(sortOrder) ? "asc" : sortOrder;
+
+                query = sortBy.ToLower() switch
+                {
+                    "priority" => order.ToLower() == "desc"
+                        ? query.OrderByDescending(t => t.Priority)
+                        : query.OrderBy(t => t.Priority),
+                    "createdat" => order.ToLower() == "desc"
+                        ? query.OrderByDescending(t => t.CreatedAt)
+                        : query.OrderBy(t => t.CreatedAt),
+                    "title" => order.ToLower() == "desc"
+                        ? query.OrderByDescending(t => t.Title)
+                        : query.OrderBy(t => t.Title),
+                    _ => query.OrderBy(t => t.Id)
+                };
+            }
+            else
+            {
+                query = query.OrderBy(t => t.Id);
+            }
+
+            // Пагинация
+            var totalCount = query.Count();
+            pageSize = Math.Clamp(pageSize, 1, 50);
+            var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            return Ok(new
+            {
+                items,
+                totalCount,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            });
         }
 
         // GET: api/tasks/5

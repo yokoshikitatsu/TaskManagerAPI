@@ -84,16 +84,22 @@ namespace TaskManagerAPI.Controllers
             });
         }
 
-        // GET: api/tasks/5
         [HttpGet("{id}")]
-        public async System.Threading.Tasks.Task<ActionResult<Models.Task>> GetTask(int id)
+        public async Task<ActionResult<object>> GetTask(int id)
         {
             var task = await _repository.GetTaskByIdAsync(id);
+
             if (task == null)
             {
-                return NotFound($"Задача с ID {id} не найдена.");
+                return NotFound(new ErrorResponse
+                {
+                    Error = "TaskNotFound",
+                    Message = $"Задача с ID {id} не найдена.",
+                    StatusCode = 404
+                });
             }
-            return Ok(task);
+
+            return Ok(new { data = task });
         }
 
         // POST: api/tasks

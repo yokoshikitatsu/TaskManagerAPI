@@ -8,7 +8,7 @@ namespace TaskManagerAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ⭐ ТРЕБУЕТ АВТОРИЗАЦИИ ДЛЯ ВСЕХ МЕТОДОВ
+    [Authorize]
     public class TasksController : ControllerBase
     {
         private readonly ITaskRepository _repository;
@@ -17,12 +17,6 @@ namespace TaskManagerAPI.Controllers
         {
             _repository = repository;
         }
-
-        // =================================================================
-        // GET: api/tasks
-        // Фильтрация, сортировка, пагинация
-        // ⭐ Защищено: требует валидный JWT-токен
-        // =================================================================
         [HttpGet]
         public async Task<ActionResult<object>> GetAllTasks(
             [FromQuery] string? category = null,
@@ -36,8 +30,6 @@ namespace TaskManagerAPI.Controllers
             var tasks = await _repository.GetAllTasksAsync();
 
             var query = tasks.AsEnumerable();
-
-            // Фильтрация
             if (!string.IsNullOrWhiteSpace(category))
             {
                 query = query.Where(t =>
@@ -53,8 +45,6 @@ namespace TaskManagerAPI.Controllers
             {
                 query = query.Where(t => t.IsCompleted == isCompleted.Value);
             }
-
-            // Сортировка
             if (!string.IsNullOrWhiteSpace(sortBy))
             {
                 string order = string.IsNullOrWhiteSpace(sortOrder) ? "asc" : sortOrder;
@@ -77,8 +67,6 @@ namespace TaskManagerAPI.Controllers
             {
                 query = query.OrderBy(t => t.Id);
             }
-
-            // Пагинация
             var totalCount = query.Count();
             pageSize = Math.Clamp(pageSize, 1, 50);
             var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
@@ -92,11 +80,6 @@ namespace TaskManagerAPI.Controllers
                 totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
             });
         }
-
-        // =================================================================
-        // GET: api/tasks/{id}
-        // ⭐ Защищено: требует валидный JWT-токен
-        // =================================================================
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetTask(int id)
         {
@@ -114,16 +97,9 @@ namespace TaskManagerAPI.Controllers
 
             return Ok(new { data = task });
         }
-
-        // =================================================================
-        // POST: api/tasks
-        // Создание новой задачи с валидацией
-        // ⭐ Защищено: требует валидный JWT-токен
-        // =================================================================
         [HttpPost]
         public async Task<ActionResult<object>> CreateTask([FromBody] CreateTaskRequest request)
         {
-            // Автоматическая валидация через Data Annotations
             if (!ModelState.IsValid)
             {
                 return BadRequest(new ErrorResponse
@@ -153,16 +129,9 @@ namespace TaskManagerAPI.Controllers
             return CreatedAtAction(nameof(GetTask), new { id = createdTask.Id },
                 new { data = createdTask, message = "Задача успешно создана" });
         }
-
-        // =================================================================
-        // PUT: api/tasks/{id}
-        // Обновление задачи с валидацией
-        // ⭐ Защищено: требует валидный JWT-токен
-        // =================================================================
         [HttpPut("{id}")]
         public async Task<ActionResult<object>> UpdateTask(int id, [FromBody] UpdateTaskRequest request)
         {
-            // Валидация модели
             if (!ModelState.IsValid)
             {
                 return BadRequest(new ErrorResponse
@@ -176,8 +145,6 @@ namespace TaskManagerAPI.Controllers
                         .ToList()
                 });
             }
-
-            // Проверка соответствия ID
             if (id != request.Id)
             {
                 return BadRequest(new ErrorResponse
@@ -187,8 +154,6 @@ namespace TaskManagerAPI.Controllers
                     StatusCode = 400
                 });
             }
-
-            // Поиск задачи
             var task = await _repository.GetTaskByIdAsync(id);
             if (task == null)
             {
@@ -199,15 +164,11 @@ namespace TaskManagerAPI.Controllers
                     StatusCode = 404
                 });
             }
-
-            // Обновление полей
             task.Title = request.Title;
             task.Description = request.Description;
             task.IsCompleted = request.IsCompleted;
             task.Priority = request.Priority;
             task.Category = request.Category;
-
-            // Авто-заполнение CompletedAt
             if (task.IsCompleted && task.CompletedAt == null)
             {
                 task.CompletedAt = DateTime.UtcNow;
@@ -222,11 +183,6 @@ namespace TaskManagerAPI.Controllers
             return Ok(new { data = updatedTask, message = "Задача успешно обновлена" });
         }
 
-        // =================================================================
-        // DELETE: api/tasks/{id}
-        // Удаление задачи
-        // ⭐ Защищено: требует валидный JWT-токен
-        // =================================================================
         [HttpDelete("{id}")]
         public async Task<ActionResult<object>> DeleteTask(int id)
         {

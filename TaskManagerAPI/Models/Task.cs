@@ -8,5 +8,8 @@
         public bool IsCompleted { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+
+        public string Category { get; set; } = "General";
+        public int Priority { get; set; } = 1; 
     }
 }

@@ -2,8 +2,41 @@
 {
     public class TaskRepository : ITaskRepository
     {
-        private readonly List<Models.Task> _tasks = new List<Models.Task>();
-        private int _nextId = 1;
+        private readonly List<Models.Task> _tasks = new List<Models.Task>
+    {
+        new Models.Task
+        {
+            Id = 1,
+            Title = "Сделать лабораторную",
+            Description = "ЛР 9, 10, 11",
+            IsCompleted = false,
+            CreatedAt = DateTime.UtcNow,
+            Category = "Учёба",
+            Priority = 5
+        },
+        new Models.Task
+        {
+            Id = 2,
+            Title = "Проверить почту",
+            Description = "",
+            IsCompleted = true,
+            CreatedAt = DateTime.UtcNow.AddDays(-1),
+            CompletedAt = DateTime.UtcNow,
+            Category = "Работа",
+            Priority = 3
+        },
+        new Models.Task
+        {
+            Id = 3,
+            Title = "Купить продукты",
+            Description = "Молоко, хлеб",
+            IsCompleted = false,
+            CreatedAt = DateTime.UtcNow,
+            Category = "Дом",
+            Priority = 2
+        }
+    };
+        private int _nextId = 4;
 
         public System.Threading.Tasks.Task<List<Models.Task>> GetAllTasksAsync()
         {

@@ -3,7 +3,7 @@
     public class TaskRepository : ITaskRepository
     {
         private readonly List<Models.Task> _tasks = new List<Models.Task>
-    {
+        { 
         new Models.Task
         {
             Id = 1,
@@ -40,6 +40,11 @@
 
         public System.Threading.Tasks.Task<List<Models.Task>> GetAllTasksAsync()
         {
+            Console.WriteLine($"В репозитории {_tasks.Count} задач");
+            foreach (var task in _tasks)
+            {
+                Console.WriteLine($"  - {task.Id}: {task.Title} ({task.Category})");
+            }
             return System.Threading.Tasks.Task.FromResult(_tasks.ToList());
         }
 

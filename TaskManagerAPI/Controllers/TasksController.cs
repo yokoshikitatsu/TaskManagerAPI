@@ -3,6 +3,7 @@ using TaskManagerAPI.Data;
 using TaskManagerAPI.Models;
 using TaskManagerAPI.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
+using System.Linq;
 
 namespace TaskManagerAPI.Controllers
 {

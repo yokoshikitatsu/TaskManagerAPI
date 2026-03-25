@@ -14,7 +14,6 @@ namespace TaskManagerAPI.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        // Хранилище пользователей в памяти (для учебной цели)
         private static readonly List<User> _users = new List<User>();
         private static int _nextUserId = 1;
         private readonly IConfiguration _config;
@@ -24,17 +23,14 @@ namespace TaskManagerAPI.Controllers
             _config = config;
         }
 
-        // POST: api/auth/register
         [HttpPost("register")]
         public ActionResult<AuthResponse> Register([FromBody] RegisterRequest request)
         {
-            // Проверка уникальности Email
             if (_users.Any(u => u.Email == request.Email))
             {
                 return BadRequest(new { error = "Пользователь с таким email уже зарегистрирован" });
             }
 
-            // Хэширование пароля (SHA256 для примера)
             string passwordHash = HashPassword(request.Password);
 
             var user = new User
@@ -47,7 +43,6 @@ namespace TaskManagerAPI.Controllers
 
             _users.Add(user);
 
-            // Генерация токена
             var token = GenerateJwtToken(user);
 
             return Ok(new AuthResponse
@@ -57,8 +52,6 @@ namespace TaskManagerAPI.Controllers
                 ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpiryMinutes"] ?? "60"))
             });
         }
-
-        // POST: api/auth/login
         [HttpPost("login")]
         public ActionResult<AuthResponse> Login([FromBody] LoginRequest request)
         {
@@ -78,8 +71,6 @@ namespace TaskManagerAPI.Controllers
                 ExpiresAt = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpiryMinutes"] ?? "60"))
             });
         }
-
-        // Вспомогательный метод: Хэширование пароля
         private string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
@@ -88,8 +79,6 @@ namespace TaskManagerAPI.Controllers
                 return Convert.ToBase64String(hashedBytes);
             }
         }
-
-        // Вспомогательный метод: Генерация JWT
         private string GenerateJwtToken(User user)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "12345678912345678912345678912345"));

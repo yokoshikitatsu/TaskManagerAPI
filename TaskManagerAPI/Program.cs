@@ -4,10 +4,12 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using TaskManagerAPI.Data;
 using TaskManagerAPI.Middleware;
+using TaskManagerAPI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.Configure<APISettings>(builder.Configuration.GetSection("APISettings"));
 builder.Services.AddSingleton<ITaskRepository, TaskRepository>();
 builder.Services.AddAuthentication(options =>
 {
@@ -34,7 +36,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "TaskManagerAPI",
-        Version = "v1"
+        Version = "v1",
+                Description = "API для управления задачами с авторизацией"
     });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

@@ -18,6 +18,11 @@ namespace TaskManagerAPI.Controllers
         {
             _repository = repository;
         }
+        [HttpGet("test-error")]
+        public ActionResult<object> TestError()
+        {
+            throw new InvalidOperationException("Тест глобального обработчика исключений!");
+        }
         [HttpGet]
         public async Task<ActionResult<object>> GetAllTasks(
             [FromQuery] string? category = null,
